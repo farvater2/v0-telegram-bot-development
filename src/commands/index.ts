@@ -78,9 +78,15 @@ export function registerCommands(bot: Bot<BotContext>): void {
     return handleCallback(ctx);
   });
 
-  // Text messages for conversation flow
-  bot.on('message:text', (ctx) => {
-    logger.info('[v0] Text message received:', ctx.message?.text?.substring(0, 50));
+  // Text messages for conversation flow (excluding commands)
+  bot.on('message:text', (ctx, next) => {
+    // Skip if this is a command (starts with /)
+    const text = ctx.message?.text || '';
+    if (text.startsWith('/')) {
+      logger.info('[v0] Skipping command in text handler:', text);
+      return next();
+    }
+    logger.info('[v0] Text message received:', text.substring(0, 50));
     return handleTextMessage(ctx);
   });
 

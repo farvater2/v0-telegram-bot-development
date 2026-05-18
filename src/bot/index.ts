@@ -14,6 +14,18 @@ export type BotContext = Context & SessionFlavor<SessionData>;
 export function createBot(token: string): Bot<BotContext> {
   const bot = new Bot<BotContext>(token);
 
+  // Debug middleware - log ALL incoming updates
+  bot.use(async (ctx, next) => {
+    const update = ctx.update;
+    logger.info('[v0] Incoming update:', {
+      updateId: update.update_id,
+      hasMessage: !!update.message,
+      messageText: update.message?.text?.substring(0, 100),
+      from: ctx.from?.username || ctx.from?.id,
+    });
+    await next();
+  });
+
   // Session middleware
   bot.use(session({
     initial: (): SessionData => ({
