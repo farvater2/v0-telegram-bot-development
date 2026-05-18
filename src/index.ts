@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createBot } from './bot/index.js';
 import { registerCommands } from './commands/index.js';
 import { initDatabase, closeDatabase, saveDatabase } from './database/index.js';
