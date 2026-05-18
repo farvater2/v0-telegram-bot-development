@@ -18,27 +18,71 @@ import {
 
 // Register all commands
 export function registerCommands(bot: Bot<BotContext>): void {
+  logger.info('[v0] Registering commands...');
+  
   // Basic commands
-  bot.command('start', handleStart);
-  bot.command('help', handleHelp);
-  bot.command('cancel', handleCancel);
+  bot.command('start', (ctx) => {
+    logger.info('[v0] /start command received');
+    return handleStart(ctx);
+  });
+  bot.command('help', (ctx) => {
+    logger.info('[v0] /help command received');
+    return handleHelp(ctx);
+  });
+  bot.command('cancel', (ctx) => {
+    logger.info('[v0] /cancel command received');
+    return handleCancel(ctx);
+  });
   
   // Task management commands
-  bot.command('new_task', handleNewTask);
-  bot.command('my_tasks', handleMyTasks);
-  bot.command('start_task', handleStartTask);
-  bot.command('stop_task', handleStopTask);
-  bot.command('edit_task', handleEditTask);
-  bot.command('delete_task', handleDeleteTask);
-  bot.command('history', handleHistory);
-  bot.command('test_task', handleTestTask);
-  bot.command('export_tasks', handleExportTasks);
+  bot.command('new_task', (ctx) => {
+    logger.info('[v0] /new_task command received');
+    return handleNewTask(ctx);
+  });
+  bot.command('my_tasks', (ctx) => {
+    logger.info('[v0] /my_tasks command received');
+    return handleMyTasks(ctx);
+  });
+  bot.command('start_task', (ctx) => {
+    logger.info('[v0] /start_task command received');
+    return handleStartTask(ctx);
+  });
+  bot.command('stop_task', (ctx) => {
+    logger.info('[v0] /stop_task command received');
+    return handleStopTask(ctx);
+  });
+  bot.command('edit_task', (ctx) => {
+    logger.info('[v0] /edit_task command received');
+    return handleEditTask(ctx);
+  });
+  bot.command('delete_task', (ctx) => {
+    logger.info('[v0] /delete_task command received');
+    return handleDeleteTask(ctx);
+  });
+  bot.command('history', (ctx) => {
+    logger.info('[v0] /history command received');
+    return handleHistory(ctx);
+  });
+  bot.command('test_task', (ctx) => {
+    logger.info('[v0] /test_task command received');
+    return handleTestTask(ctx);
+  });
+  bot.command('export_tasks', (ctx) => {
+    logger.info('[v0] /export_tasks command received');
+    return handleExportTasks(ctx);
+  });
 
   // Callback queries
-  bot.on('callback_query:data', handleCallback);
+  bot.on('callback_query:data', (ctx) => {
+    logger.info('[v0] Callback query received:', ctx.callbackQuery?.data);
+    return handleCallback(ctx);
+  });
 
   // Text messages for conversation flow
-  bot.on('message:text', handleTextMessage);
+  bot.on('message:text', (ctx) => {
+    logger.info('[v0] Text message received:', ctx.message?.text?.substring(0, 50));
+    return handleTextMessage(ctx);
+  });
 
-  logger.info('Commands registered');
+  logger.info('[v0] All commands registered successfully');
 }
