@@ -34,6 +34,11 @@ async function main(): Promise<void> {
     
     // Start bot
     logger.info('Starting bot...');
+    
+    // Delete any existing webhook to ensure long polling works
+    await bot.api.deleteWebhook({ drop_pending_updates: false });
+    logger.info('Webhook deleted, starting long polling...');
+    
     await bot.start({
       onStart: (botInfo) => {
         logger.info(`Bot started as @${botInfo.username}`);
