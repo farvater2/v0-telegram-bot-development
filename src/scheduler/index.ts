@@ -1,5 +1,6 @@
 import { Bot } from 'grammy';
 import cron from 'node-cron';
+import { config } from '../config/index.js';
 import { getActiveTasks, updateTaskLastCheck, updateTaskStatus, addTaskHistory, getTaskById } from '../database/index.js';
 import { executeTask, shouldNotify, formatMessage } from '../scraper/index.js';
 import { logger, logTask } from '../utils/logger.js';
@@ -12,7 +13,6 @@ const taskTimers: Map<number, NodeJS.Timeout> = new Map();
 // Queue for task execution to prevent overload
 const taskQueue: number[] = [];
 let isProcessing = false;
-const MAX_CONCURRENT_TASKS = 10;
 let runningTasks = 0;
 
 // Bot instance for sending notifications
@@ -125,7 +125,7 @@ async function processQueue(): Promise<void> {
   if (isProcessing) return;
   isProcessing = true;
   
-  while (taskQueue.length > 0 && runningTasks < MAX_CONCURRENT_TASKS) {
+  while (taskQueue.length > 0 && runningTasks < config.maxConcurrentTasks) {
     const taskId = taskQueue.shift();
     if (taskId !== undefined) {
       runningTasks++;

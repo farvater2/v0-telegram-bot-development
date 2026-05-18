@@ -1,10 +1,11 @@
 import initSqlJs, { Database as SqlJsDatabase, SqlValue } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
+import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 import type { Task, TaskHistory, CreateTaskParams, UpdateTaskParams, TaskStatus } from '../types/index.js';
 
-const DB_PATH = process.env.DB_PATH || './data/bot.db';
+const DB_PATH = config.dbPath;
 
 let db: SqlJsDatabase | null = null;
 
@@ -302,13 +303,13 @@ export function addTaskHistory(
     VALUES (?, ?, ?, ?, ?, ?)
   `, [taskId, result, messageSent ? 1 : 0, responseTime, statusCode, error]);
   
-  // Clean old history (keep last 1000 entries per task)
+  // Clean old history (keep last entries per task based on config)
   db.run(`
     DELETE FROM task_history 
     WHERE task_id = ? AND id NOT IN (
-      SELECT id FROM task_history WHERE task_id = ? ORDER BY check_time DESC LIMIT 1000
+      SELECT id FROM task_history WHERE task_id = ? ORDER BY check_time DESC LIMIT ?
     )
-  `, [taskId, taskId]);
+  `, [taskId, taskId, config.maxHistoryPerTask]);
   
   saveDatabase();
 }

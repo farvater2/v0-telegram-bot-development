@@ -1,4 +1,5 @@
 import winston from 'winston';
+import fs from 'fs';
 import { format } from 'date-fns';
 
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
@@ -9,6 +10,11 @@ const customFormat = winston.format.printf(({ level, message, timestamp, taskId,
   const extra = Object.keys(rest).length ? ` ${JSON.stringify(rest)}` : '';
   return `[${timestamp}] [${level.toUpperCase()}]${taskInfo} ${message}${extra}`;
 });
+
+// Create logs directory if it doesn't exist
+if (!fs.existsSync('logs')) {
+  fs.mkdirSync('logs', { recursive: true });
+}
 
 // Create logger instance
 export const logger = winston.createLogger({
@@ -46,13 +52,12 @@ export const logger = winston.createLogger({
   ],
 });
 
-// Create logs directory if it doesn't exist
-import fs from 'fs';
-if (!fs.existsSync('logs')) {
-  fs.mkdirSync('logs', { recursive: true });
-}
-
 // Log task-specific messages
-export function logTask(taskId: number, level: 'info' | 'warn' | 'error' | 'debug', message: string, meta?: Record<string, unknown>): void {
+export function logTask(
+  taskId: number, 
+  level: 'info' | 'warn' | 'error' | 'debug', 
+  message: string, 
+  meta?: Record<string, unknown>
+): void {
   logger.log(level, message, { taskId, ...meta });
 }

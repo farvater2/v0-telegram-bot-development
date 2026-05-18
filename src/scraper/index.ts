@@ -1,11 +1,9 @@
 import axios, { AxiosError } from 'axios';
 import * as cheerio from 'cheerio';
 import { format } from 'date-fns';
+import { config } from '../config/index.js';
 import { logger, logTask } from '../utils/logger.js';
 import type { Task, CheckResult, TemplateVariables } from '../types/index.js';
-
-// ReDoS protection: max execution time for regex
-const REGEX_TIMEOUT_MS = 5000;
 
 // Execute a monitoring task
 export async function executeTask(task: Task, isTest: boolean = false): Promise<CheckResult> {
@@ -134,7 +132,7 @@ async function executeRegexWithTimeout(
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error('Regex execution timeout - possible ReDoS attack'));
-    }, REGEX_TIMEOUT_MS);
+    }, config.regexTimeoutMs);
 
     try {
       const regex = new RegExp(pattern, 'g');
@@ -143,7 +141,6 @@ async function executeRegexWithTimeout(
       
       let match: RegExpExecArray | null;
       let iterationCount = 0;
-      const maxIterations = 1000; // Limit iterations
 
       while ((match = regex.exec(content)) !== null) {
         matches.push(match[0]);
@@ -161,7 +158,7 @@ async function executeRegexWithTimeout(
         }
 
         iterationCount++;
-        if (iterationCount >= maxIterations) {
+        if (iterationCount >= config.maxRegexIterations) {
           logger.warn('Regex iteration limit reached');
           break;
         }

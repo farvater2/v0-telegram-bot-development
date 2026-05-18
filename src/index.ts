@@ -1,30 +1,25 @@
-import 'dotenv/config';
+import { config, validateConfig } from './config/index.js';
 import { createBot } from './bot/index.js';
 import { registerCommands } from './commands/index.js';
 import { initDatabase, closeDatabase, saveDatabase } from './database/index.js';
 import { initScheduler, stopScheduler } from './scheduler/index.js';
 import { logger } from './utils/logger.js';
 
-// Environment variables
-const BOT_TOKEN = process.env.BOT_TOKEN;
-
-if (!BOT_TOKEN) {
-  logger.error('BOT_TOKEN environment variable is required');
-  process.exit(1);
-}
-
 // Main function
 async function main(): Promise<void> {
   logger.info('Starting Telegram Page Watcher Bot...');
   
   try {
+    // Validate config
+    validateConfig();
+    
     // Initialize database
     logger.info('Initializing database...');
     await initDatabase();
     
     // Create bot
     logger.info('Creating bot instance...');
-    const bot = createBot(BOT_TOKEN!);
+    const bot = createBot(config.botToken);
     
     // Register commands
     logger.info('Registering commands...');
