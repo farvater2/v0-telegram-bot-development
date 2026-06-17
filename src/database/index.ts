@@ -137,10 +137,12 @@ export function createTask(params: CreateTaskParams): Task {
     params.user_agent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
   ]);
   
-  saveDatabase();
-  
+  // Capture the new row id BEFORE exporting/saving the database.
+  // db.export() can reset sql.js statement context, so query the id first.
   const result = db.exec('SELECT last_insert_rowid() as id');
   const taskId = result[0].values[0][0] as number;
+  
+  saveDatabase();
   
   return getTaskById(taskId)!;
 }

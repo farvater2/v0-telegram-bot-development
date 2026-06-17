@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page Watcher — Панель управления</title>
+  <meta name="description" content="Веб-интерфейс для управления задачами мониторинга Telegram-бота Page Watcher" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">PW</div>
+        <div>
+          <h1 class="brand-title">Page Watcher</h1>
+          <p class="brand-sub">Панель управления задачами</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="user-field">
+          <label for="userId">Telegram User ID</label>
+          <input id="userId" type="number" inputmode="numeric" placeholder="123456789" autocomplete="off" />
+        </div>
+        <button id="newTaskBtn" class="btn btn-primary">
+          <span aria-hidden="true">+</span> Новая задача
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <section class="stats-row" id="statsRow" aria-label="Статистика">
+      <div class="stat-card">
+        <span class="stat-label">Всего задач</span>
+        <span class="stat-value" id="statTotal">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Активных</span>
+        <span class="stat-value stat-active" id="statActive">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Остановлено</span>
+        <span class="stat-value" id="statStopped">0</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">В очереди</span>
+        <span class="stat-value" id="statQueue">0</span>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <h2 class="section-title">Задачи мониторинга</h2>
+      <button id="refreshBtn" class="btn btn-ghost" title="Обновить">Обновить</button>
+    </div>
+
+    <div id="taskList" class="task-list" aria-live="polite"></div>
+
+    <div id="emptyState" class="empty-state" hidden>
+      <p class="empty-title">Задач пока нет</p>
+      <p class="empty-sub">Введите ваш Telegram User ID и создайте первую задачу мониторинга.</p>
+    </div>
+  </main>
+
+  <!-- Task editor modal -->
+  <div id="modalOverlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h3 id="modalTitle">Новая задача</h3>
+        <button id="modalClose" class="icon-btn" aria-label="Закрыть">&times;</button>
+      </div>
+      <form id="taskForm" class="modal-body">
+        <input type="hidden" id="taskId" />
+
+        <div class="field">
+          <label for="f_name">Название</label>
+          <input id="f_name" type="text" placeholder="Например: Курс доллара" />
+        </div>
+
+        <div class="field">
+          <label for="f_url">URL <span class="req">*</span></label>
+          <input id="f_url" type="url" placeholder="https://example.com" required />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="f_method">HTTP метод</label>
+            <select id="f_method">
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f_mode">Режим</label>
+            <select id="f_mode">
+              <option value="extract">extract — извлечение</option>
+              <option value="check">check — проверка</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f_regex">Регулярное выражение <span class="req">*</span></label>
+          <input id="f_regex" type="text" class="mono" placeholder="\d+[.,]?\d*" required />
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="f_condition">Условие уведомления</label>
+            <select id="f_condition">
+              <option value="on_change">on_change — при изменении</option>
+              <option value="always">always — всегда</option>
+              <option value="on_match">on_match — при совпадении</option>
+              <option value="on_increase">on_increase — при росте</option>
+              <option value="on_decrease">on_decrease — при падении</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f_frequency">Частота (секунды) <span class="req">*</span></label>
+            <input id="f_frequency" type="number" min="10" value="3600" required />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="f_template">Шаблон сообщения <span class="req">*</span></label>
+          <textarea id="f_template" rows="3" placeholder="Найдено: {first_match} на {url}" required></textarea>
+          <p class="hint">Переменные: <code>{url}</code> <code>{first_match}</code> <code>{total_matches}</code> <code>{matches_list}</code> <code>{check_time}</code> <code>{group_1}</code></p>
+        </div>
+
+        <details class="advanced">
+          <summary>Дополнительно</summary>
+          <div class="advanced-body">
+            <div class="field-row">
+              <div class="field">
+                <label for="f_timeout">Таймаут (сек)</label>
+                <input id="f_timeout" type="number" min="1" value="30" />
+              </div>
+              <div class="field">
+                <label for="f_retries">Повторы</label>
+                <input id="f_retries" type="number" min="0" value="3" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="f_useragent">User-Agent</label>
+              <input id="f_useragent" type="text" class="mono" placeholder="Mozilla/5.0 ..." />
+            </div>
+            <div class="field">
+              <label for="f_body">Тело запроса (для POST)</label>
+              <textarea id="f_body" rows="2" class="mono" placeholder='{"key":"value"}'></textarea>
+            </div>
+          </div>
+        </details>
+
+        <div id="testResult" class="test-result" hidden></div>
+
+        <div class="modal-footer">
+          <button type="button" id="testBtn" class="btn btn-ghost">Проверить</button>
+          <div class="footer-right">
+            <button type="button" id="cancelBtn" class="btn btn-ghost">Отмена</button>
+            <button type="submit" id="saveBtn" class="btn btn-primary">Сохранить</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- History modal -->
+  <div id="historyOverlay" class="modal-overlay" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+      <div class="modal-header">
+        <h3 id="historyTitle">История проверок</h3>
+        <button id="historyClose" class="icon-btn" aria-label="Закрыть">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="historyList" class="history-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

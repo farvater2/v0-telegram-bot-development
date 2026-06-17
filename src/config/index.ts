@@ -11,6 +11,10 @@ export const config = {
   // Logging
   logLevel: process.env.LOG_LEVEL || 'info',
   
+  // Web interface
+  webEnabled: process.env.WEB_ENABLED !== 'false',
+  webPort: parseInt(process.env.WEB_PORT || '3000', 10),
+  
   // Task limits
   maxTasksPerUser: 50,
   minFrequencySeconds: 10,
