@@ -3,6 +3,7 @@ import { createBot } from './bot/index.js';
 import { registerCommands } from './commands/index.js';
 import { initDatabase, closeDatabase, saveDatabase } from './database/index.js';
 import { initScheduler, stopScheduler } from './scheduler/index.js';
+import { startWebServer, stopWebServer } from './web/server.js';
 import { logger } from './utils/logger.js';
 
 // Main function
@@ -28,6 +29,10 @@ async function main(): Promise<void> {
     // Initialize scheduler
     logger.info('Initializing scheduler...');
     initScheduler(bot);
+    
+    // Start web interface
+    logger.info('Starting web interface...');
+    startWebServer();
     
     // Setup graceful shutdown
     setupGracefulShutdown(bot);
@@ -61,6 +66,9 @@ function setupGracefulShutdown(bot: ReturnType<typeof createBot>): void {
       // Stop accepting new requests
       await bot.stop();
       logger.info('Bot stopped');
+      
+      // Stop web server
+      await stopWebServer();
       
       // Stop scheduler
       stopScheduler();

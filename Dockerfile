@@ -41,11 +41,16 @@ RUN mkdir -p /app/data /app/logs && \
 COPY --from=builder --chown=botuser:nodejs /app/dist ./dist
 COPY --from=builder --chown=botuser:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=botuser:nodejs /app/package.json ./
+# Static web interface assets (served by the embedded Express server)
+COPY --from=builder --chown=botuser:nodejs /app/public ./public
 
 USER botuser
 
-# Health check - verify process is running
+# Web interface port (override with WEB_PORT)
+EXPOSE 3000
+
+# Health check - verify the web interface responds
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD pgrep -f "node dist/index.js" || exit 1
+    CMD wget --no-verbose --tries=1 --spider "http://localhost:${WEB_PORT:-3000}/api/status" || exit 1
 
 CMD ["node", "dist/index.js"]
