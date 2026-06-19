@@ -12,7 +12,8 @@ import {
   getEditFieldKeyboard,
   getConfirmKeyboard,
   getEditModeKeyboard,
-  getEditConditionKeyboard
+  getEditConditionKeyboard,
+  getStopOnConditionKeyboard
 } from '../bot/index.js';
 import { 
   getTasksByUserId, 
@@ -366,12 +367,39 @@ Example: <code>https://example.com/product/123</code>
   if (data.startsWith('condition_')) {
     const condition = data.replace('condition_', '') as ConditionType;
     updateSessionTaskData(ctx, { condition_type: condition });
-    setSessionStep(ctx, 'frequency');
+    setSessionStep(ctx, 'stop_on_condition');
     
     await ctx.editMessageText(`
 <b>Create New Task</b>
 
-<b>Step 6/6: Set check frequency</b>
+<b>Step 6/7: Stop on condition</b>
+
+Should the task automatically stop after the notification condition is first fulfilled?
+    `.trim(), { parse_mode: 'HTML', reply_markup: getStopOnConditionKeyboard() });
+    return;
+  }
+
+  // Stop on condition selection (new task creation)
+  if (data === 'set_stop_true' || data === 'set_stop_false') {
+    const stopOnCondition = data === 'set_stop_true';
+    const session = getSession(ctx);
+
+    // During editing, update the existing task directly
+    if (session.step === 'edit_stop_on_condition' && session.editingTaskId) {
+      updateTask(session.editingTaskId, { stop_on_condition: stopOnCondition });
+      await ctx.editMessageText(`Stop on condition set to: <b>${stopOnCondition ? 'Yes' : 'No'}</b>`, { parse_mode: 'HTML' });
+      clearSession(ctx);
+      return;
+    }
+
+    // During new task creation, proceed to frequency step
+    updateSessionTaskData(ctx, { stop_on_condition: stopOnCondition });
+    setSessionStep(ctx, 'frequency');
+
+    await ctx.editMessageText(`
+<b>Create New Task</b>
+
+<b>Step 7/7: Set check frequency</b>
 
 Enter interval between checks in seconds.
 Minimum: ${config.minFrequencySeconds} sec
@@ -400,6 +428,12 @@ Examples:
     if (field === 'condition') {
       setSessionStep(ctx, 'edit_condition');
       await ctx.editMessageText('Select new condition:', { parse_mode: 'HTML', reply_markup: getEditConditionKeyboard() });
+      return;
+    }
+
+    if (field === 'stop_on_condition') {
+      setSessionStep(ctx, 'edit_stop_on_condition');
+      await ctx.editMessageText('Should the task stop after the condition is first fulfilled?', { parse_mode: 'HTML', reply_markup: getStopOnConditionKeyboard() });
       return;
     }
 
@@ -570,6 +604,7 @@ Example:
         mode: taskData.mode!,
         condition_type: taskData.condition_type!,
         frequency_seconds: frequency,
+        stop_on_condition: taskData.stop_on_condition !== false,
       });
       
       clearSession(ctx);
@@ -583,6 +618,7 @@ Example:
 - RegExp: <code>${escapeHtml(truncate(task.regex_pattern, 40))}</code>
 - Condition: ${getConditionLabel(task.condition_type)}
 - Frequency: ${formatDuration(task.frequency_seconds)}
+- Stop on condition: ${task.stop_on_condition ? 'Yes' : 'No'}
 
 Use /start_task ${task.id} to start monitoring
       `.trim());

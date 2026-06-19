@@ -58,6 +58,7 @@ export function getEditFieldKeyboard(): InlineKeyboard {
     ],
     [
       { text: 'Frequency', callback_data: 'edit_frequency' },
+      { text: 'Stop on condition', callback_data: 'edit_stop_on_condition' },
     ],
     [
       { text: 'Cancel', callback_data: 'cancel' },
@@ -81,6 +82,18 @@ export function getEditModeKeyboard(): InlineKeyboard {
     [
       { text: 'Check (check)', callback_data: 'set_mode_check' },
       { text: 'Extract (extract)', callback_data: 'set_mode_extract' },
+    ],
+  ]);
+}
+
+// Stop on condition selection keyboard (used during task creation and editing)
+export function getStopOnConditionKeyboard(): InlineKeyboard {
+  return createKeyboard([
+    [
+      { text: 'Yes — stop after first trigger', callback_data: 'set_stop_true' },
+    ],
+    [
+      { text: 'No — keep running', callback_data: 'set_stop_false' },
     ],
   ]);
 }
