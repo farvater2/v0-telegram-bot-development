@@ -44,6 +44,7 @@ const f = {
   regex: document.getElementById('f_regex'),
   condition: document.getElementById('f_condition'),
   frequency: document.getElementById('f_frequency'),
+  stopOnCondition: document.getElementById('f_stopOnCondition'),
   template: document.getElementById('f_template'),
   timeout: document.getElementById('f_timeout'),
   retries: document.getElementById('f_retries'),
@@ -191,6 +192,7 @@ function openModal(task) {
     f.regex.value = task.regex_pattern;
     f.condition.value = task.condition_type;
     f.frequency.value = task.frequency_seconds;
+    f.stopOnCondition.checked = task.stop_on_condition !== false;
     f.template.value = task.template;
     f.timeout.value = task.timeout ?? 30;
     f.retries.value = task.max_retries ?? 3;
@@ -222,6 +224,7 @@ function collectForm() {
     regex_pattern: f.regex.value,
     condition_type: f.condition.value,
     frequency_seconds: Number(f.frequency.value),
+    stop_on_condition: f.stopOnCondition.checked,
     template: f.template.value,
     timeout: Number(f.timeout.value) || 30,
     max_retries: Number(f.retries.value) || 0,

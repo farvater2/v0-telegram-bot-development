@@ -172,8 +172,17 @@ async function processTask(taskId: number): Promise<void> {
     );
     
     // Check if notification should be sent
-    if (shouldNotify(task, result, previousValue)) {
+    const conditionMet = shouldNotify(task, result, previousValue);
+    if (conditionMet) {
       await sendNotification(task, result);
+      
+      // Halt the task once the condition is fulfilled, if enabled
+      if (task.stop_on_condition) {
+        updateTaskStatus(taskId, 'stopped');
+        unscheduleTask(taskId);
+        logTask(taskId, 'info', 'Task stopped: notification condition fulfilled (stop_on_condition enabled)');
+        return;
+      }
     }
     
     // Reset error status if successful

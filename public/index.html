@@ -125,6 +125,16 @@
         </div>
 
         <div class="field">
+          <label class="checkbox-field">
+            <input id="f_stopOnCondition" type="checkbox" checked />
+            <span>
+              Останавливать задачу при выполнении условия
+              <span class="checkbox-hint">Активная задача остановится после первого срабатывания уведомления</span>
+            </span>
+          </label>
+        </div>
+
+        <div class="field">
           <label for="f_template">Шаблон сообщения <span class="req">*</span></label>
           <textarea id="f_template" rows="3" placeholder="Найдено: {first_match} на {url}" required></textarea>
           <p class="hint">Переменные: <code>{url}</code> <code>{first_match}</code> <code>{total_matches}</code> <code>{matches_list}</code> <code>{check_time}</code> <code>{group_1}</code></p>

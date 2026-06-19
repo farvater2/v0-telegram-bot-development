@@ -28,6 +28,7 @@ export interface Task {
   condition_type: ConditionType;
   condition_expression: string | null;
   frequency_seconds: number;
+  stop_on_condition: boolean;
   status: TaskStatus;
   last_value: string | null;
   last_check: string | null;
@@ -64,6 +65,7 @@ export interface CreateTaskParams {
   condition_type: ConditionType;
   condition_expression?: string;
   frequency_seconds: number;
+  stop_on_condition?: boolean;
   headers?: Record<string, string>;
   timeout?: number;
   max_retries?: number;
@@ -82,6 +84,7 @@ export interface UpdateTaskParams {
   condition_type?: ConditionType;
   condition_expression?: string;
   frequency_seconds?: number;
+  stop_on_condition?: boolean;
   headers?: Record<string, string>;
   timeout?: number;
   max_retries?: number;

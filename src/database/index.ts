@@ -62,6 +62,7 @@ function createTables(): void {
       condition_type TEXT NOT NULL DEFAULT 'on_change',
       condition_expression TEXT,
       frequency_seconds INTEGER NOT NULL DEFAULT 3600,
+      stop_on_condition INTEGER NOT NULL DEFAULT 1,
       status TEXT NOT NULL DEFAULT 'stopped',
       last_value TEXT,
       last_check TEXT,
@@ -97,8 +98,27 @@ function createTables(): void {
   db.run('CREATE INDEX IF NOT EXISTS idx_history_task_id ON task_history(task_id)');
   db.run('CREATE INDEX IF NOT EXISTS idx_history_check_time ON task_history(check_time)');
   
+  // Run migrations for older databases
+  runMigrations();
+  
   saveDatabase();
   logger.info('Database tables created');
+}
+
+// Apply schema migrations for databases created before new columns existed
+function runMigrations(): void {
+  if (!db) throw new Error('Database not initialized');
+  
+  const columns = db.exec('PRAGMA table_info(tasks)');
+  const columnNames = columns.length > 0
+    ? columns[0].values.map(row => row[1] as string)
+    : [];
+  
+  // Add stop_on_condition column if missing (default enabled to match new behavior)
+  if (!columnNames.includes('stop_on_condition')) {
+    db.run('ALTER TABLE tasks ADD COLUMN stop_on_condition INTEGER NOT NULL DEFAULT 1');
+    logger.info('Migration: added stop_on_condition column to tasks');
+  }
 }
 
 // Get database instance
@@ -116,9 +136,9 @@ export function createTask(params: CreateTaskParams): Task {
   db.run(`
     INSERT INTO tasks (
       user_id, name, url, regex_pattern, template, mode, 
-      condition_type, condition_expression, frequency_seconds,
+      condition_type, condition_expression, frequency_seconds, stop_on_condition,
       headers, timeout, max_retries, http_method, request_body, user_agent
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
     params.user_id,
     params.name || null,
@@ -129,6 +149,7 @@ export function createTask(params: CreateTaskParams): Task {
     params.condition_type,
     params.condition_expression || null,
     params.frequency_seconds,
+    params.stop_on_condition === false ? 0 : 1,
     headers,
     params.timeout || 30,
     params.max_retries || 3,
@@ -217,6 +238,10 @@ export function updateTask(id: number, params: UpdateTaskParams): Task | null {
   if (params.frequency_seconds !== undefined) {
     updates.push('frequency_seconds = ?');
     values.push(params.frequency_seconds);
+  }
+  if (params.stop_on_condition !== undefined) {
+    updates.push('stop_on_condition = ?');
+    values.push(params.stop_on_condition ? 1 : 0);
   }
   if (params.headers !== undefined) {
     updates.push('headers = ?');
@@ -348,6 +373,9 @@ function rowToTask(columns: string[], row: SqlValue[]): Task {
     condition_type: obj.condition_type as Task['condition_type'],
     condition_expression: obj.condition_expression as string | null,
     frequency_seconds: obj.frequency_seconds as number,
+    stop_on_condition: obj.stop_on_condition === undefined || obj.stop_on_condition === null
+      ? true
+      : Boolean(obj.stop_on_condition),
     status: obj.status as Task['status'],
     last_value: obj.last_value as string | null,
     last_check: obj.last_check as string | null,

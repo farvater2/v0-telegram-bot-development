@@ -483,6 +483,31 @@ textarea {
   font-size: 0.72rem;
 }
 
+.checkbox-field {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.6rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.checkbox-field input[type='checkbox'] {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.1rem;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.checkbox-hint {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
 .advanced summary {
   cursor: pointer;
   font-size: 0.85rem;
