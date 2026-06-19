@@ -73,6 +73,7 @@ export function formatTaskDetails(task: Task): string {
 - <b>Mode:</b> ${getModeLabel(task.mode)}
 - <b>Condition:</b> ${getConditionLabel(task.condition_type)}
 - <b>Frequency:</b> ${formatDuration(task.frequency_seconds)}
+- <b>Stop on condition:</b> ${task.stop_on_condition ? 'Yes' : 'No'}
 - <b>Status:</b> ${getStatusIcon(task.status)} ${task.status}
   `.trim();
 }
