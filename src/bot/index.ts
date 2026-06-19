@@ -116,5 +116,7 @@ export {
   getConfirmKeyboard,
   getEditModeKeyboard,
   getEditConditionKeyboard,
-  getStopOnConditionKeyboard
+  getStopOnConditionKeyboard,
+  getSkipChannelKeyboard,
+  getChannelOnlyKeyboard
 } from './keyboards.js';

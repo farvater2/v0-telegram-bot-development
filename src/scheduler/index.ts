@@ -216,23 +216,34 @@ async function sendNotification(task: Task, result: { firstMatch: string | null;
   }
   
   const message = formatMessage(task, result);
-  
-  try {
-    await botInstance.api.sendMessage(task.user_id, message, { parse_mode: 'HTML' });
-    
-    logTask(task.id, 'info', 'Notification sent successfully');
-    
-    // Update history to mark message as sent
-    // (In production, you'd want to update the specific history entry)
-    
-  } catch (error) {
-    logTask(task.id, 'error', `Failed to send notification: ${(error as Error).message}`);
-    
-    // Handle blocked bot or deleted chat
-    if ((error as { error_code?: number }).error_code === 403) {
-      logTask(task.id, 'warn', 'User blocked bot, stopping task');
-      updateTaskStatus(task.id, 'stopped');
-      unscheduleTask(task.id);
+
+  // Determine recipients: channel (if set), user (unless channel-only)
+  const recipients: Array<{ chatId: number | string; label: string }> = [];
+
+  if (task.notify_channel_id) {
+    recipients.push({ chatId: task.notify_channel_id, label: `channel ${task.notify_channel_id}` });
+  }
+  if (!task.notify_channel_only || !task.notify_channel_id) {
+    recipients.push({ chatId: task.user_id, label: `user ${task.user_id}` });
+  }
+
+  for (const recipient of recipients) {
+    try {
+      await botInstance.api.sendMessage(recipient.chatId, message, { parse_mode: 'HTML' });
+      logTask(task.id, 'info', `Notification sent to ${recipient.label}`);
+    } catch (error) {
+      logTask(task.id, 'error', `Failed to send notification to ${recipient.label}: ${(error as Error).message}`);
+
+      // If the creator blocked the bot, stop the task
+      if (
+        recipient.chatId === task.user_id &&
+        (error as { error_code?: number }).error_code === 403
+      ) {
+        logTask(task.id, 'warn', 'User blocked bot, stopping task');
+        updateTaskStatus(task.id, 'stopped');
+        unscheduleTask(task.id);
+        return;
+      }
     }
   }
 }

@@ -74,6 +74,7 @@ export function formatTaskDetails(task: Task): string {
 - <b>Condition:</b> ${getConditionLabel(task.condition_type)}
 - <b>Frequency:</b> ${formatDuration(task.frequency_seconds)}
 - <b>Stop on condition:</b> ${task.stop_on_condition ? 'Yes' : 'No'}
+- <b>Notify channel:</b> ${task.notify_channel_id ? escapeHtml(task.notify_channel_id) : 'Not set'}${task.notify_channel_id ? ` (${task.notify_channel_only ? 'channel only' : 'channel + user'})` : ''}
 - <b>Status:</b> ${getStatusIcon(task.status)} ${task.status}
   `.trim();
 }
