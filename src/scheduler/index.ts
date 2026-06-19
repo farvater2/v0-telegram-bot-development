@@ -217,13 +217,17 @@ async function sendNotification(task: Task, result: { firstMatch: string | null;
   
   const message = formatMessage(task, result);
 
-  // Determine recipients: channel (if set), user (unless channel-only)
+  // Determine recipients based on notify_target
   const recipients: Array<{ chatId: number | string; label: string }> = [];
 
-  if (task.notify_channel_id) {
+  if (task.notify_target === 'bot') {
+    recipients.push({ chatId: task.user_id, label: `user ${task.user_id}` });
+  } else if (task.notify_target === 'channel' && task.notify_channel_id) {
     recipients.push({ chatId: task.notify_channel_id, label: `channel ${task.notify_channel_id}` });
-  }
-  if (!task.notify_channel_only || !task.notify_channel_id) {
+  } else if (task.notify_target === 'both') {
+    if (task.notify_channel_id) {
+      recipients.push({ chatId: task.notify_channel_id, label: `channel ${task.notify_channel_id}` });
+    }
     recipients.push({ chatId: task.user_id, label: `user ${task.user_id}` });
   }
 

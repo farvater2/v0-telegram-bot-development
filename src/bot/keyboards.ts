@@ -61,8 +61,8 @@ export function getEditFieldKeyboard(): InlineKeyboard {
       { text: 'Stop on condition', callback_data: 'edit_stop_on_condition' },
     ],
     [
-      { text: 'Notify channel', callback_data: 'edit_notify_channel_id' },
-      { text: 'Channel only', callback_data: 'edit_notify_channel_only' },
+      { text: 'Notify channel ID', callback_data: 'edit_notify_channel_id' },
+      { text: 'Notify target', callback_data: 'edit_notify_target' },
     ],
     [
       { text: 'Cancel', callback_data: 'cancel' },
@@ -90,21 +90,17 @@ export function getEditModeKeyboard(): InlineKeyboard {
   ]);
 }
 
-// Skip notify channel step keyboard (used during task creation)
-export function getSkipChannelKeyboard(): InlineKeyboard {
+// Notify target keyboard — 3 options: bot only, channel only, both
+export function getNotifyTargetKeyboard(): InlineKeyboard {
   return createKeyboard([
     [
-      { text: 'Skip — notify only me', callback_data: 'channel_skip' },
+      { text: 'Bot (me only)', callback_data: 'set_notify_bot' },
     ],
-  ]);
-}
-
-// Channel-only toggle keyboard
-export function getChannelOnlyKeyboard(): InlineKeyboard {
-  return createKeyboard([
     [
-      { text: 'Channel + me', callback_data: 'set_channel_only_false' },
-      { text: 'Channel only', callback_data: 'set_channel_only_true' },
+      { text: 'Channel only', callback_data: 'set_notify_channel' },
+    ],
+    [
+      { text: 'Bot + Channel', callback_data: 'set_notify_both' },
     ],
   ]);
 }
