@@ -110,6 +110,8 @@ export function createApiRouter(): Router {
       condition_expression: typeof body.condition_expression === 'string' ? body.condition_expression : undefined,
       frequency_seconds: Number(body.frequency_seconds),
       stop_on_condition: body.stop_on_condition === undefined ? undefined : Boolean(body.stop_on_condition),
+      notify_channel_id: body.notify_channel_id === undefined ? undefined : (body.notify_channel_id as string | null),
+      notify_channel_only: body.notify_channel_only === undefined ? undefined : Boolean(body.notify_channel_only),
       headers: typeof body.headers === 'object' && body.headers !== null ? (body.headers as Record<string, string>) : undefined,
       timeout: body.timeout !== undefined ? Number(body.timeout) : undefined,
       max_retries: body.max_retries !== undefined ? Number(body.max_retries) : undefined,
@@ -151,6 +153,8 @@ export function createApiRouter(): Router {
     if (body.condition_expression !== undefined) params.condition_expression = body.condition_expression as string;
     if (body.frequency_seconds !== undefined) params.frequency_seconds = Number(body.frequency_seconds);
     if (body.stop_on_condition !== undefined) params.stop_on_condition = Boolean(body.stop_on_condition);
+    if (body.notify_channel_id !== undefined) params.notify_channel_id = body.notify_channel_id as string | null;
+    if (body.notify_channel_only !== undefined) params.notify_channel_only = Boolean(body.notify_channel_only);
     if (body.headers !== undefined) params.headers = body.headers as Record<string, string>;
     if (body.timeout !== undefined) params.timeout = Number(body.timeout);
     if (body.max_retries !== undefined) params.max_retries = Number(body.max_retries);
@@ -252,6 +256,8 @@ export function createApiRouter(): Router {
       condition_expression: null,
       frequency_seconds: Number(body.frequency_seconds),
       stop_on_condition: body.stop_on_condition === undefined ? true : Boolean(body.stop_on_condition),
+      notify_channel_id: typeof body.notify_channel_id === 'string' ? body.notify_channel_id : null,
+      notify_channel_only: Boolean(body.notify_channel_only),
       status: 'stopped' as const,
       last_value: null,
       last_check: null,

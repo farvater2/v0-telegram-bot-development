@@ -134,6 +134,21 @@
           </label>
         </div>
 
+        <div class="field-row">
+          <div class="field">
+            <label for="f_channelId">Telegram-канал (chat_id)</label>
+            <input id="f_channelId" type="text" class="mono" placeholder="@channel или -100123456789" />
+            <p class="hint">Бот должен быть администратором канала</p>
+          </div>
+          <div class="field">
+            <label for="f_channelOnly">Получатель уведомлений</label>
+            <select id="f_channelOnly">
+              <option value="false">Канал + я</option>
+              <option value="true">Только канал</option>
+            </select>
+          </div>
+        </div>
+
         <div class="field">
           <label for="f_template">Шаблон сообщения <span class="req">*</span></label>
           <textarea id="f_template" rows="3" placeholder="Найдено: {first_match} на {url}" required></textarea>
