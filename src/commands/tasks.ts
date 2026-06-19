@@ -14,8 +14,7 @@ import {
   getEditModeKeyboard,
   getEditConditionKeyboard,
   getStopOnConditionKeyboard,
-  getSkipChannelKeyboard,
-  getChannelOnlyKeyboard
+  getNotifyTargetKeyboard
 } from '../bot/index.js';
 import { 
   getTasksByUserId, 
@@ -60,7 +59,7 @@ export async function handleNewTask(ctx: BotContext): Promise<void> {
   await sendMessage(ctx, `
 <b>Create New Task</b>
 
-<b>Step 1/9: Select mode</b>
+<b>Step 1/8: Select mode</b>
 
 - <b>Check</b> - checks for data presence (True/False)
 - <b>Extract</b> - extracts specific values using regular expressions
@@ -357,7 +356,7 @@ export async function handleCallback(ctx: BotContext): Promise<void> {
     await ctx.editMessageText(`
 <b>Create New Task</b>
 
-<b>Step 2/9: Enter URL</b>
+<b>Step 2/8: Enter URL</b>
 
 Send the full URL of the page to monitor.
 Example: <code>https://example.com/product/123</code>
@@ -374,7 +373,7 @@ Example: <code>https://example.com/product/123</code>
     await ctx.editMessageText(`
 <b>Create New Task</b>
 
-<b>Step 6/9: Stop on condition</b>
+<b>Step 6/8: Stop on condition</b>
 
 Should the task automatically stop after the notification condition is first fulfilled?
     `.trim(), { parse_mode: 'HTML', reply_markup: getStopOnConditionKeyboard() });
@@ -394,66 +393,55 @@ Should the task automatically stop after the notification condition is first ful
       return;
     }
 
-    // During new task creation, proceed to notify channel step
+    // During new task creation, proceed to notify target step
     updateSessionTaskData(ctx, { stop_on_condition: stopOnCondition });
-    setSessionStep(ctx, 'notify_channel_id');
+    setSessionStep(ctx, 'notify_target');
 
     await ctx.editMessageText(`
 <b>Create New Task</b>
 
-<b>Step 7/9: Notify channel (optional)</b>
+<b>Step 7/8: Notification target</b>
 
-Send the channel chat ID or username to also deliver notifications there.
-Examples: <code>@mychannel</code> or <code>-1001234567890</code>
-
-<i>The bot must be an admin of the channel to post messages.</i>
-    `.trim(), { parse_mode: 'HTML', reply_markup: getSkipChannelKeyboard() });
+Where should notifications be delivered?
+    `.trim(), { parse_mode: 'HTML', reply_markup: getNotifyTargetKeyboard() });
     return;
   }
 
-  // Channel skip / channel-only selection (new task creation)
-  if (data === 'channel_skip') {
-    updateSessionTaskData(ctx, { notify_channel_id: null, notify_channel_only: false });
-    setSessionStep(ctx, 'frequency');
-    await ctx.editMessageText(`
-<b>Create New Task</b>
-
-<b>Step 9/9: Set check frequency</b>
-
-Enter interval between checks in seconds.
-Minimum: ${config.minFrequencySeconds} sec
-
-Examples:
-- 60 - every minute
-- 300 - every 5 minutes
-- 3600 - every hour
-- 86400 - once a day
-    `.trim(), { parse_mode: 'HTML' });
-    return;
-  }
-
-  if (data === 'set_channel_only_true' || data === 'set_channel_only_false') {
-    const channelOnly = data === 'set_channel_only_true';
+  // Notify target selection
+  if (data === 'set_notify_bot' || data === 'set_notify_channel' || data === 'set_notify_both') {
+    const notifyTarget = data.replace('set_notify_', '') as 'bot' | 'channel' | 'both';
     const session = getSession(ctx);
 
     // During editing, update the task directly
-    if (session.step === 'edit_notify_channel_only' && session.editingTaskId) {
-      updateTask(session.editingTaskId, { notify_channel_only: channelOnly });
-      await ctx.editMessageText(
-        `Channel-only mode set to: <b>${channelOnly ? 'Channel only' : 'Channel + me'}</b>`,
-        { parse_mode: 'HTML' }
-      );
+    if (session.step === 'edit_notify_target' && session.editingTaskId) {
+      updateTask(session.editingTaskId, { notify_target: notifyTarget });
+      const label = notifyTarget === 'bot' ? 'Bot only' : notifyTarget === 'channel' ? 'Channel only' : 'Bot + Channel';
+      await ctx.editMessageText(`Notification target set to: <b>${label}</b>`, { parse_mode: 'HTML' });
       clearSession(ctx);
       return;
     }
 
-    // During new task creation, proceed to frequency step
-    updateSessionTaskData(ctx, { notify_channel_only: channelOnly });
-    setSessionStep(ctx, 'frequency');
-    await ctx.editMessageText(`
+    // During creation: if channel needed, ask for channel ID; otherwise go to frequency
+    updateSessionTaskData(ctx, { notify_target: notifyTarget });
+
+    if (notifyTarget === 'channel' || notifyTarget === 'both') {
+      setSessionStep(ctx, 'notify_channel_id');
+      await ctx.editMessageText(`
 <b>Create New Task</b>
 
-<b>Step 9/9: Set check frequency</b>
+<b>Step 7/8: Enter channel ID</b>
+
+Send the channel chat ID or username.
+Examples: <code>@mychannel</code> or <code>-1001234567890</code>
+
+<i>The bot must be an admin of the channel.</i>
+      `.trim(), { parse_mode: 'HTML' });
+    } else {
+      setSessionStep(ctx, 'frequency');
+      await ctx.editMessageText(`
+<b>Create New Task</b>
+
+<b>Step 8/8: Set check frequency</b>
 
 Enter interval between checks in seconds.
 Minimum: ${config.minFrequencySeconds} sec
@@ -463,7 +451,8 @@ Examples:
 - 300 - every 5 minutes
 - 3600 - every hour
 - 86400 - once a day
-    `.trim(), { parse_mode: 'HTML' });
+      `.trim(), { parse_mode: 'HTML' });
+    }
     return;
   }
 
@@ -500,9 +489,9 @@ Examples:
       return;
     }
 
-    if (field === 'notify_channel_only') {
-      setSessionStep(ctx, 'edit_notify_channel_only');
-      await ctx.editMessageText('Choose notification delivery:', { parse_mode: 'HTML', reply_markup: getChannelOnlyKeyboard() });
+    if (field === 'notify_target') {
+      setSessionStep(ctx, 'edit_notify_target');
+      await ctx.editMessageText('Where should notifications be delivered?', { parse_mode: 'HTML', reply_markup: getNotifyTargetKeyboard() });
       return;
     }
 
@@ -585,7 +574,7 @@ export async function handleTextMessage(ctx: BotContext): Promise<void> {
     await sendMessage(ctx, `
 <b>Create New Task</b>
 
-<b>Step 3/6: Enter regular expression</b>
+<b>Step 3/8: Enter regular expression</b>
 
 Enter RegExp to search for data on the page.
 
@@ -611,7 +600,7 @@ Use groups () to extract values.
     await sendMessage(ctx, `
 <b>Create New Task</b>
 
-<b>Step 4/6: Enter message template</b>
+<b>Step 4/8: Enter message template</b>
 
 Create notification text with variables:
 
@@ -641,7 +630,7 @@ Example:
     await sendMessage(ctx, `
 <b>Create New Task</b>
 
-<b>Step 5/6: Select notification condition</b>
+<b>Step 5/8: Select notification condition</b>
 
 - <b>Always</b> - notify on every check
 - <b>On match</b> - only when data is found
@@ -652,18 +641,25 @@ Example:
     return;
   }
 
-  // Notify channel ID input (creation step 7)
+  // Notify channel ID input (creation, follows step 7 when target is channel or both)
   if (step === 'notify_channel_id') {
     const channelId = text.trim();
     updateSessionTaskData(ctx, { notify_channel_id: channelId });
-    setSessionStep(ctx, 'notify_channel_only');
+    setSessionStep(ctx, 'frequency');
     await sendMessage(ctx, `
 <b>Create New Task</b>
 
-<b>Step 8/9: Notification delivery</b>
+<b>Step 8/8: Set check frequency</b>
 
-Should notifications be sent only to the channel, or to both the channel and you?
-    `.trim(), { reply_markup: getChannelOnlyKeyboard() });
+Enter interval between checks in seconds.
+Minimum: ${config.minFrequencySeconds} sec
+
+Examples:
+- 60 - every minute
+- 300 - every 5 minutes
+- 3600 - every hour
+- 86400 - once a day
+    `.trim());
     return;
   }
 
@@ -690,7 +686,7 @@ Should notifications be sent only to the channel, or to both the channel and you
         frequency_seconds: frequency,
         stop_on_condition: taskData.stop_on_condition !== false,
         notify_channel_id: taskData.notify_channel_id || null,
-        notify_channel_only: taskData.notify_channel_only === true,
+        notify_target: taskData.notify_target || 'bot',
       });
       
       clearSession(ctx);
@@ -705,7 +701,7 @@ Should notifications be sent only to the channel, or to both the channel and you
 - Condition: ${getConditionLabel(task.condition_type)}
 - Frequency: ${formatDuration(task.frequency_seconds)}
 - Stop on condition: ${task.stop_on_condition ? 'Yes' : 'No'}
-- Notify channel: ${task.notify_channel_id ? escapeHtml(task.notify_channel_id) + (task.notify_channel_only ? ' (channel only)' : ' (channel + me)') : 'None'}
+- Notify target: ${task.notify_target === 'bot' ? 'Bot only' : task.notify_target === 'channel' ? `Channel only (${escapeHtml(task.notify_channel_id || '')})` : `Bot + Channel (${escapeHtml(task.notify_channel_id || '')})`}
 
 Use /start_task ${task.id} to start monitoring
       `.trim());

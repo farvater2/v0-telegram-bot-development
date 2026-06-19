@@ -136,16 +136,17 @@
 
         <div class="field-row">
           <div class="field">
+            <label for="f_notifyTarget">Получатель уведомлений</label>
+            <select id="f_notifyTarget">
+              <option value="bot">Только бот (я)</option>
+              <option value="channel">Только канал</option>
+              <option value="both">Бот + канал</option>
+            </select>
+          </div>
+          <div class="field" id="f_channelIdWrap">
             <label for="f_channelId">Telegram-канал (chat_id)</label>
             <input id="f_channelId" type="text" class="mono" placeholder="@channel или -100123456789" />
             <p class="hint">Бот должен быть администратором канала</p>
-          </div>
-          <div class="field">
-            <label for="f_channelOnly">Получатель уведомлений</label>
-            <select id="f_channelOnly">
-              <option value="false">Канал + я</option>
-              <option value="true">Только канал</option>
-            </select>
           </div>
         </div>
 

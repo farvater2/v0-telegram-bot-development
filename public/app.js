@@ -45,8 +45,9 @@ const f = {
   condition: document.getElementById('f_condition'),
   frequency: document.getElementById('f_frequency'),
   stopOnCondition: document.getElementById('f_stopOnCondition'),
+  notifyTarget: document.getElementById('f_notifyTarget'),
   channelId: document.getElementById('f_channelId'),
-  channelOnly: document.getElementById('f_channelOnly'),
+  channelIdWrap: document.getElementById('f_channelIdWrap'),
   template: document.getElementById('f_template'),
   timeout: document.getElementById('f_timeout'),
   retries: document.getElementById('f_retries'),
@@ -195,8 +196,9 @@ function openModal(task) {
     f.condition.value = task.condition_type;
     f.frequency.value = task.frequency_seconds;
     f.stopOnCondition.checked = task.stop_on_condition !== false;
+    f.notifyTarget.value = task.notify_target || 'bot';
     f.channelId.value = task.notify_channel_id || '';
-    f.channelOnly.value = task.notify_channel_only ? 'true' : 'false';
+    syncChannelIdVisibility();
     f.template.value = task.template;
     f.timeout.value = task.timeout ?? 30;
     f.retries.value = task.max_retries ?? 3;
@@ -229,8 +231,8 @@ function collectForm() {
     condition_type: f.condition.value,
     frequency_seconds: Number(f.frequency.value),
     stop_on_condition: f.stopOnCondition.checked,
-    notify_channel_id: f.channelId.value.trim() || null,
-    notify_channel_only: f.channelOnly.value === 'true',
+    notify_target: f.notifyTarget.value,
+    notify_channel_id: f.notifyTarget.value !== 'bot' ? (f.channelId.value.trim() || null) : null,
     template: f.template.value,
     timeout: Number(f.timeout.value) || 30,
     max_retries: Number(f.retries.value) || 0,
@@ -359,9 +361,18 @@ async function handleTaskAction(e) {
   }
 }
 
+// ----- Notify target -----
+function syncChannelIdVisibility() {
+  const needsChannel = f.notifyTarget.value !== 'bot';
+  f.channelIdWrap.style.display = needsChannel ? '' : 'none';
+}
+
 // ----- Init -----
 function init() {
   el.userId.value = state.userId;
+
+  f.notifyTarget.addEventListener('change', syncChannelIdVisibility);
+  syncChannelIdVisibility();
 
   el.userId.addEventListener('change', () => {
     state.userId = el.userId.value.trim();

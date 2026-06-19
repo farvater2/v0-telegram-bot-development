@@ -30,7 +30,7 @@ export interface Task {
   frequency_seconds: number;
   stop_on_condition: boolean;
   notify_channel_id: string | null;
-  notify_channel_only: boolean;
+  notify_target: 'bot' | 'channel' | 'both';
   status: TaskStatus;
   last_value: string | null;
   last_check: string | null;
@@ -69,7 +69,7 @@ export interface CreateTaskParams {
   frequency_seconds: number;
   stop_on_condition?: boolean;
   notify_channel_id?: string | null;
-  notify_channel_only?: boolean;
+  notify_target?: 'bot' | 'channel' | 'both';
   headers?: Record<string, string>;
   timeout?: number;
   max_retries?: number;
@@ -90,7 +90,7 @@ export interface UpdateTaskParams {
   frequency_seconds?: number;
   stop_on_condition?: boolean;
   notify_channel_id?: string | null;
-  notify_channel_only?: boolean;
+  notify_target?: 'bot' | 'channel' | 'both';
   headers?: Record<string, string>;
   timeout?: number;
   max_retries?: number;

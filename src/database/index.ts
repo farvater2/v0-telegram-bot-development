@@ -64,7 +64,7 @@ function createTables(): void {
       frequency_seconds INTEGER NOT NULL DEFAULT 3600,
       stop_on_condition INTEGER NOT NULL DEFAULT 1,
       notify_channel_id TEXT,
-      notify_channel_only INTEGER NOT NULL DEFAULT 0,
+      notify_target TEXT NOT NULL DEFAULT 'bot',
       status TEXT NOT NULL DEFAULT 'stopped',
       last_value TEXT,
       last_check TEXT,
@@ -127,9 +127,9 @@ function runMigrations(): void {
     db.run('ALTER TABLE tasks ADD COLUMN notify_channel_id TEXT');
     logger.info('Migration: added notify_channel_id column to tasks');
   }
-  if (!columnNames.includes('notify_channel_only')) {
-    db.run('ALTER TABLE tasks ADD COLUMN notify_channel_only INTEGER NOT NULL DEFAULT 0');
-    logger.info('Migration: added notify_channel_only column to tasks');
+  if (!columnNames.includes('notify_target')) {
+    db.run("ALTER TABLE tasks ADD COLUMN notify_target TEXT NOT NULL DEFAULT 'bot'");
+    logger.info('Migration: added notify_target column to tasks');
   }
 }
 
@@ -149,7 +149,7 @@ export function createTask(params: CreateTaskParams): Task {
     INSERT INTO tasks (
       user_id, name, url, regex_pattern, template, mode, 
       condition_type, condition_expression, frequency_seconds, stop_on_condition,
-      notify_channel_id, notify_channel_only,
+      notify_channel_id, notify_target,
       headers, timeout, max_retries, http_method, request_body, user_agent
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `, [
@@ -164,7 +164,7 @@ export function createTask(params: CreateTaskParams): Task {
     params.frequency_seconds,
     params.stop_on_condition === false ? 0 : 1,
     params.notify_channel_id || null,
-    params.notify_channel_only ? 1 : 0,
+    params.notify_target || 'bot',
     headers,
     params.timeout || 30,
     params.max_retries || 3,
@@ -262,9 +262,9 @@ export function updateTask(id: number, params: UpdateTaskParams): Task | null {
     updates.push('notify_channel_id = ?');
     values.push(params.notify_channel_id || null);
   }
-  if (params.notify_channel_only !== undefined) {
-    updates.push('notify_channel_only = ?');
-    values.push(params.notify_channel_only ? 1 : 0);
+  if (params.notify_target !== undefined) {
+    updates.push('notify_target = ?');
+    values.push(params.notify_target);
   }
   if (params.headers !== undefined) {
     updates.push('headers = ?');
@@ -400,7 +400,7 @@ function rowToTask(columns: string[], row: SqlValue[]): Task {
       ? true
       : Boolean(obj.stop_on_condition),
     notify_channel_id: (obj.notify_channel_id as string | null) ?? null,
-    notify_channel_only: Boolean(obj.notify_channel_only),
+    notify_target: (obj.notify_target as 'bot' | 'channel' | 'both') || 'bot',
     status: obj.status as Task['status'],
     last_value: obj.last_value as string | null,
     last_check: obj.last_check as string | null,

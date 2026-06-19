@@ -74,7 +74,7 @@ export function formatTaskDetails(task: Task): string {
 - <b>Condition:</b> ${getConditionLabel(task.condition_type)}
 - <b>Frequency:</b> ${formatDuration(task.frequency_seconds)}
 - <b>Stop on condition:</b> ${task.stop_on_condition ? 'Yes' : 'No'}
-- <b>Notify channel:</b> ${task.notify_channel_id ? escapeHtml(task.notify_channel_id) : 'Not set'}${task.notify_channel_id ? ` (${task.notify_channel_only ? 'channel only' : 'channel + user'})` : ''}
+- <b>Notify target:</b> ${task.notify_target === 'bot' ? 'Bot only' : task.notify_target === 'channel' ? `Channel only (${escapeHtml(task.notify_channel_id || 'not set')})` : `Bot + Channel (${escapeHtml(task.notify_channel_id || 'not set')})`}
 - <b>Status:</b> ${getStatusIcon(task.status)} ${task.status}
   `.trim();
 }
