@@ -1,56 +1,64 @@
-# ARM64-compatible Dockerfile for Telegram Page Watcher Bot
-# Build: docker build --platform linux/arm64 -t telegram-page-watcher .
-# Run: docker run -d --env-file .env -v $(pwd)/data:/app/data telegram-page-watcher
+# Telegram Page Watcher Bot — multi-arch image (linux/amd64, linux/arm64)
+#
+# Build:  docker build -t telegram-page-watcher .
+#         docker build --platform linux/arm64 -t telegram-page-watcher .
+# Run:    mkdir -p data logs && sudo chown -R 1000:1000 data logs
+#         docker run -d --name page-watcher --restart unless-stopped \
+#           --env-file .env -p 3000:3000 \
+#           -v "$(pwd)/data:/app/data" -v "$(pwd)/logs:/app/logs" \
+#           telegram-page-watcher
+#
+# The container runs as the built-in `node` user (uid/gid 1000), so bind-mounted
+# data/ and logs/ directories must be writable by uid 1000.
 
-FROM node:20-alpine AS base
+ARG NODE_VERSION=22
+ARG PNPM_VERSION=10.34.3
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Dependencies stage
-FROM base AS deps
+# ---------- base: Node + pinned pnpm ----------
+FROM node:${NODE_VERSION}-alpine AS base
+ARG PNPM_VERSION
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable && corepack prepare "pnpm@${PNPM_VERSION}" --activate
 WORKDIR /app
 
+# ---------- deps: full install (devDependencies are needed for tsc) ----------
+FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Build stage
+# ---------- prod-deps: runtime dependencies only ----------
+FROM base AS prod-deps
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --prod
+
+# ---------- builder: compile TypeScript ----------
 FROM base AS builder
-WORKDIR /app
-
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
+COPY package.json tsconfig.json ./
+COPY src ./src
 RUN pnpm build
 
-# Production stage
-FROM base AS runner
+# ---------- runner: minimal production image ----------
+FROM node:${NODE_VERSION}-alpine AS runner
 WORKDIR /app
-
 ENV NODE_ENV=production
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 botuser
+# Writable dirs for the SQLite file (DB_PATH defaults to ./data/bot.db) and winston logs (./logs)
+RUN mkdir -p /app/data /app/logs && chown -R node:node /app
 
-# Create data directory for SQLite database
-RUN mkdir -p /app/data /app/logs && \
-    chown -R botuser:nodejs /app/data /app/logs
+COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=builder   --chown=node:node /app/dist ./dist
+COPY --chown=node:node package.json ./
+# Static web UI; the server resolves it at runtime as dist/web/../../public
+COPY --chown=node:node public ./public
 
-# Copy built application
-COPY --from=builder --chown=botuser:nodejs /app/dist ./dist
-COPY --from=builder --chown=botuser:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=botuser:nodejs /app/package.json ./
-# Static web interface assets (served by the embedded Express server)
-COPY --from=builder --chown=botuser:nodejs /app/public ./public
-
-USER botuser
+USER node
 
 # Web interface port (override with WEB_PORT)
 EXPOSE 3000
 
-# Health check - verify the web interface responds
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider "http://localhost:${WEB_PORT:-3000}/api/status" || exit 1
+# Healthy when the web UI responds, or immediately when the web UI is disabled (WEB_ENABLED=false)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD test "$WEB_ENABLED" = "false" || wget -q --spider "http://127.0.0.1:${WEB_PORT:-3000}/api/status"
 
 CMD ["node", "dist/index.js"]
