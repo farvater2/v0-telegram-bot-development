@@ -2,14 +2,16 @@
 #
 # Build:  docker build -t telegram-page-watcher .
 #         docker build --platform linux/arm64 -t telegram-page-watcher .
-# Run:    mkdir -p data logs && sudo chown -R 1000:1000 data logs
+# Run:    mkdir -p data logs
 #         docker run -d --name page-watcher --restart unless-stopped \
 #           --env-file .env -p 3000:3000 \
 #           -v "$(pwd)/data:/app/data" -v "$(pwd)/logs:/app/logs" \
 #           telegram-page-watcher
 #
-# The container runs as the built-in `node` user (uid/gid 1000), so bind-mounted
-# data/ and logs/ directories must be writable by uid 1000.
+# The container starts as root, fixes ownership of the bind-mounted data/
+# and logs/ directories (whatever uid they have on the host), then drops
+# to the built-in `node` user before running the app. No manual `chown`
+# on the host is required.
 
 ARG NODE_VERSION=22
 ARG PNPM_VERSION=10.34.3
@@ -43,7 +45,9 @@ FROM node:${NODE_VERSION}-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Writable dirs for the SQLite file (DB_PATH defaults to ./data/bot.db) and winston logs (./logs)
+# su-exec drops root -> node after the entrypoint fixes volume ownership
+RUN apk add --no-cache su-exec
+
 RUN mkdir -p /app/data /app/logs && chown -R node:node /app
 
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
@@ -51,8 +55,11 @@ COPY --from=builder   --chown=node:node /app/dist ./dist
 COPY --chown=node:node package.json ./
 # Static web UI; the server resolves it at runtime as dist/web/../../public
 COPY --chown=node:node public ./public
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-USER node
+# Container starts as root so the entrypoint can chown bind-mounted
+# volumes; it execs into the unprivileged `node` user before CMD runs.
 
 # Web interface port (override with WEB_PORT)
 EXPOSE 3000
@@ -61,4 +68,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD test "$WEB_ENABLED" = "false" || wget -q --spider "http://127.0.0.1:${WEB_PORT:-3000}/api/status"
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]
